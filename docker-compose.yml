@@ -1,0 +1,88 @@
+version: '3.6'
+
+x-rabbit-variables: &rabbit-variables
+  RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
+  RABBITMQ_DEFAULT_HOST: "rabbitmq-server"
+  RABBITMQ_DEFAULT_USER: "admin"
+  RABBITMQ_DEFAULT_PASS: "admin"
+  RABBITMQ_DEFAULT_VHOST: "/"
+
+x-postgresql-variables: &postgresql-variables
+  POSTGRES_HOST: "db"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PASSWORD: "P@ssw0rd"
+  POSTGRES_DB: "site"
+  TZ: "Europe/Moscow"
+
+services:
+  web:
+    container_name: web
+    volumes:
+      - ./web:/usr/src/app
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        <<: *rabbit-variables
+        <<: *postgresql-variables
+    restart: always
+    ports:
+      - "8085:80"
+    depends_on:
+      - db
+      - rabbitmq-server
+    networks:
+      - tornado-iot-net
+  tcp:
+    container_name: tcp
+    volumes:
+      - ./tcp:/usr/src/app
+    build:
+      context: ./tcp
+      dockerfile: Dockerfile
+      args:
+        <<: *rabbit-variables
+    restart: always
+    ports:
+      - "8084:8999"
+    depends_on:
+      - redis
+      - rabbitmq-server
+    networks:
+      - tornado-iot-net
+  redis:
+    image: redis
+    container_name: redis
+    networks:
+      - tornado-iot-net
+  db:
+    image: postgres:11-alpine
+    container_name: db
+    ports:
+    - "5432:5432"
+    volumes:
+    - db:/var/lib/postgresql/data
+    environment: *postgresql-variables
+    networks:
+      - tornado-iot-net
+  rabbitmq-server:
+    image: "rabbitmq:3-management"
+    container_name: rabbitmq-server
+    hostname: "rabbitmq-server"
+    environment: *rabbit-variables
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    labels:
+      NAME: "rabbitmq-server"
+    restart: always
+    networks:
+      - tornado-iot-net
+
+networks:
+  tornado-iot-net:
+    name: tornado-iot-net
+
+volumes:
+  db:
+    driver: local

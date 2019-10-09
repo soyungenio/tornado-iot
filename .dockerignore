@@ -1,0 +1,11 @@
+env
+.dockerignore
+charts
+.git
+.gitignore
+Dockerfile*
+docker-compose*
+.gitlab-ci.yml
+.idea
+**/__pycache__
+**/.DS_Store
