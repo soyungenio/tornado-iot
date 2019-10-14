@@ -4,4 +4,4 @@ do
 	echo "rabbitmq is unavailable - starting"
 	sleep 3
 done
-python manage.py
+python manage.py start

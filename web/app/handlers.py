@@ -1,10 +1,9 @@
-import json
 import logging
 import time
 
 from marshmallow import ValidationError
 from sqlalchemy import desc
-from tornado.escape import json_decode
+from tornado.escape import json_decode, json_encode
 
 from .base_handler import BaseHandler
 from .schemas import DeviceSchema
@@ -26,9 +25,10 @@ class DeviceHandler(BaseHandler):
             device_scheme.load(json_data)
         except ValidationError as err:
             self.set_status(400)
-            await self.finish(json.dumps({"message": err.messages}))
+            await self.finish(json_encode({"message": err.messages}))
 
         await self.query(device.insert().values(id=json_data['id']))
+        self.set_status(201)
 
 
 class ReportHandler(BaseHandler):
@@ -48,7 +48,7 @@ class ReportHandler(BaseHandler):
             report_row['report'] = row.report
             response['reports'].append(report_row)
 
-        await self.finish(json.dumps(response))
+        await self.finish(json_encode(response))
 
     async def post(self, id):
         json_data = json_decode(self.request.body)
@@ -59,6 +59,7 @@ class ReportHandler(BaseHandler):
             device_scheme.load(json_data)
         except ValidationError as err:
             self.set_status(400)
-            await self.finish(json.dumps({"message": err.messages}))
+            await self.finish(json_encode({"message": err.messages}))
 
-        await self.pika_publish(json.dumps(json_data), routing_key="output")
+        await self.pika_publish(json_encode(json_data), routing_key="output")
+        self.set_status(201)

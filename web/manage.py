@@ -1,9 +1,11 @@
 import asyncio
 import os
 
+from app import create_app
 import tornado.locks
-from app import Application
 from tornado.options import options
+import pytest
+import click
 
 # pika params
 options.define("rabbitmq_host", default=os.environ.get('RABBITMQ_HOST'), type=str)
@@ -22,22 +24,21 @@ io_loop = tornado.ioloop.IOLoop.current()
 asyncio.set_event_loop(io_loop.asyncio_loop)
 
 
+@click.group()
 def main():
-    # Create tornado application and supply URL routes
-    app = Application()
+    pass
 
-    # Init database connection
-    app.init_db()
 
-    # Init connection to rabbitmq
-    app.init_aio_pika()
+@main.command("test")
+def test():
+    pytest.main(["-x", "tests"])
 
-    # Setup HTTP Server
-    app.listen(80)
 
-    return app
+@main.command("start")
+def start():
+    create_app()
+    tornado.ioloop.IOLoop.current().start()
 
 
 if __name__ == "__main__":
     main()
-    tornado.ioloop.IOLoop.current().start()
